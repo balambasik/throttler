@@ -1,0 +1,21 @@
+{
+  "name": "balambasik/throttler",
+  "description": "Throttle any operations",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "balambasik",
+      "email": "balambasik@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=7.2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Balambasik\\Throttler\\": "src/"
+    }
+  }
+}
