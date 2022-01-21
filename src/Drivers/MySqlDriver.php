@@ -44,10 +44,15 @@ class MySqlDriver extends AbstractDriver implements DriverInterface
     public function clearHitsLessThan(int $timestamp, array $tags = []): void
     {
         if ($tags) {
-            $tags  = implode(",", $tags);
-            $query = $this->db->prepare("DELETE FROM {$this->table_name} WHERE `wait` < :wait AND WHERE `tag` IN('$tags');");
+            $tags = array_map(function ($tag) {
+                return "'" . $this->getHash($tag) . "'";
+            }, $tags);
+
+            $tgs = implode(",", $tags);
+
+            $query = $this->db->prepare("DELETE FROM {$this->table_name} WHERE `tag` IN($tgs) AND `wait` < :wait");
         } else {
-            $query = $this->db->prepare("DELETE FROM {$this->table_name} WHERE `wait` < :wait;");
+            $query = $this->db->prepare("DELETE FROM {$this->table_name} WHERE `wait` < :wait");
         }
 
         $query->bindValue(":wait", $timestamp, \PDO::PARAM_INT);
@@ -63,9 +68,9 @@ class MySqlDriver extends AbstractDriver implements DriverInterface
     public function setHit(string $identifier, string $tag, int $timestamp): void
     {
         if ($this->getLastHitTimestamp($identifier, $tag)) {
-            $query = $this->db->prepare("UPDATE {$this->table_name} SET `wait` = :wait WHERE `id` = :id AND `tag` = :tag;");
+            $query = $this->db->prepare("UPDATE {$this->table_name} SET `wait` = :wait WHERE `id` = :id AND `tag` = :tag");
         } else {
-            $query = $this->db->prepare("INSERT INTO {$this->table_name} (`id`, `tag`, `wait`) VALUES (:id, :tag, :wait);");
+            $query = $this->db->prepare("INSERT INTO {$this->table_name} (`id`, `tag`, `wait`) VALUES (:id, :tag, :wait)");
         }
 
         $query->bindValue(":id", $this->getHash($identifier), \PDO::PARAM_STR);
@@ -81,7 +86,7 @@ class MySqlDriver extends AbstractDriver implements DriverInterface
      */
     public function getLastHitTimestamp(string $identifier, string $tag): int
     {
-        $query = $this->db->prepare("SELECT `wait` FROM {$this->table_name} WHERE `id` = :id AND `tag` = :tag;");
+        $query = $this->db->prepare("SELECT `wait` FROM {$this->table_name} WHERE `id` = :id AND `tag` = :tag");
         $query->bindValue(":id", $this->getHash($identifier), \PDO::PARAM_STR);
         $query->bindValue(":tag", $this->getHash($tag), \PDO::PARAM_STR);
         $query->execute();
@@ -94,8 +99,8 @@ class MySqlDriver extends AbstractDriver implements DriverInterface
      */
     public function createTable(): void
     {
-        $this->db->exec("CREATE TABLE IF NOT EXISTS `{$this->table_name}` (`id` varchar(10), `tag` varchar(10), `wait` INT(11) UNSIGNED NOT NULL);");
-        $this->db->exec("ALTER TABLE `{$this->table_name}` ADD INDEX (`id`, `tag`);");
+        $this->db->exec("CREATE TABLE IF NOT EXISTS `{$this->table_name}` (`id` varchar(10), `tag` varchar(10), `wait` INT(11) UNSIGNED NOT NULL)");
+        $this->db->exec("ALTER TABLE `{$this->table_name}` ADD INDEX (`id`, `tag`)");
     }
 
     /**
@@ -103,7 +108,7 @@ class MySqlDriver extends AbstractDriver implements DriverInterface
      */
     public function clear(): DriverInterface
     {
-        $this->db->exec("DELETE FROM {$this->table_name};");
+        $this->db->exec("DELETE FROM {$this->table_name}");
         return $this;
     }
 
